@@ -35,23 +35,21 @@ func (config *Config) cacheHandler(w http.ResponseWriter, r *http.Request) {
 
 	absPath := filepath.Join(config.cacheDir, path)
 
-	// The nginx config does this, but why?
-	skipCache := strings.HasSuffix(absPath, ".sig")
 	_, err := os.Stat(absPath)
 
+	if err != nil && os.IsNotExist(err) == false {
+		log.Println("Failed to stat file", err)
+		http.Error(w, "Something bad happened", 500)
+		return
+	}
+
+	skipCache := strings.HasSuffix(absPath, ".sig") || strings.HasSuffix(absPath, ".db")
+
 	if err == nil && skipCache == false {
-		// It exists!
+		// It exists, sendfile it
 		log.Println("Cache hit on", path)
-		contents, err := ioutil.ReadFile(absPath)
-		if err == nil {
-			w.Header().Set("Content-Type", "application/octet-stream")
-			w.Write(contents)
-		} else {
-			log.Println("Error reading file", err)
-			http.Error(w, "Error reading file", 404)
-			return
-		}
-	} else if os.IsNotExist(err) {
+		http.ServeFile(w, r, absPath)
+	} else if skipCache || os.IsNotExist(err) {
 		// Need to download
 
 		mirrorPath := fmt.Sprintf("%s%s", config.mirror, path)
@@ -109,9 +107,6 @@ func (config *Config) cacheHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 	} else {
-		log.Println("Something bad happened", err)
-		http.Error(w, "Some error occured", 500)
-		return
 	}
 }
 
@@ -120,6 +115,10 @@ func main() {
 	cacheDir := flag.String("cache", "/tmp/flipper_cache", "cache directory")
 	mirror := flag.String("upstream", "", "the upstream mirror to use")
 	flag.Parse()
+
+	if *mirror == "" {
+		log.Fatal("Must specify upstream mirror")
+	}
 
 	config := Config{*cacheDir, *mirror}
 	http.HandleFunc("/", config.cacheHandler)
