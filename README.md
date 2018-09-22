@@ -30,6 +30,6 @@ setup:
 
 Other todos:
 
-- [ ] Avoid keeping entire package in memory during download
 - [ ] Use configuration file instead of command line flags
 - [ ] Add a systemd unit file
+- [ ] pkgbuild for AUR
