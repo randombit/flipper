@@ -1,3 +1,9 @@
+Abandoned!
+============
+
+[Pacoloco](https://github.com/anatol/pacoloco) is a cache server for Arch
+that works well and has most of the features I intended for Flipper.
+
 Flipper
 ========
 
